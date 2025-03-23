@@ -26,13 +26,13 @@ class PlayerShip:
 
     def update_sprite(self):
         if self.health >= 4:
-            sprite_name = "Fullhealth.png"
+            sprite_name = "FullHealth.png"
         elif self.health == 3:
-            sprite_name = "Damaged.png"
+            sprite_name = "SlightDamage.png"
         elif self.health == 2:
-            sprite_name = "Slightdamage.png"
+            sprite_name = "Damaged.png"
         else:
-            sprite_name = "Verydamaged.png"
+            sprite_name = "VeryDamaged.png"
 
         image_path = os.path.join(self.base_path, sprite_name)
         original_image = pygame.image.load(image_path).convert_alpha()
