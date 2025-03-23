@@ -14,7 +14,7 @@ BG_SWITCH_INTERVAL_SEC = 120  # switch every 2 minutes
 class PlayerShip:
     def __init__(self, position):
         self.base_path = "playership/MainShip/MainShipBases"
-        self.size = (120, 120)
+        self.size = (144, 144)
         self.health = 4  # 4 stages: 4 = full, 1 = very damaged
         self.speed = 5
         self.firepower = 10
