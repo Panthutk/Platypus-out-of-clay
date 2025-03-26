@@ -14,10 +14,10 @@ BG_SWITCH_INTERVAL_SEC = 120  # switch every 2 minutes
 class PlayerShip:
     def __init__(self, position):
         self.base_path = "playership/MainShip/MainShipBases"
-        self.engine_idle_path = "playership/MainShip/Engines/Engines.png"
-        self.engine_moving_path = "playership/MainShip/Engines/Moving.png"
+        self.engine_base_path = "playership/MainShip/Engines/Engines.png"
+        self.engine_effect_path = "playership/MainShip/Engines/Moving.png"
 
-        self.size = 144, 144  # Original sprite size 48x48 scaled by 3x
+        self.size = 144, 144
         self.health = 4
         self.speed = 5
         self.firepower = 10
@@ -27,33 +27,36 @@ class PlayerShip:
         self.rect = None
         self.is_moving = False
 
-        # Engine animation variables
-        self.engine_idle_image = pygame.image.load(
-            self.engine_idle_path).convert_alpha()
-        self.engine_idle_image = pygame.transform.scale(
-            self.engine_idle_image, self.size)
-        self.engine_idle_image = pygame.transform.rotate(
-            self.engine_idle_image, -90)
+        # Load base engine (always visible)
+        self.engine_base_image = pygame.image.load(
+            self.engine_base_path).convert_alpha()
+        self.engine_base_image = pygame.transform.scale(
+            self.engine_base_image, self.size)
+        self.engine_base_image = pygame.transform.rotate(
+            self.engine_base_image, -90)
+        self.engine_base_rect = self.engine_base_image.get_rect(
+            center=self.position)
 
-        # Load moving engine frames
-        self.engine_moving_frames = []
-        moving_sheet = pygame.image.load(
-            self.engine_moving_path).convert_alpha()
-        frame_width = moving_sheet.get_width() // 4
+        # Load engine effect frames (shown when moving)
+        self.engine_effect_frames = []
+        effect_sheet = pygame.image.load(
+            self.engine_effect_path).convert_alpha()
+        frame_width = effect_sheet.get_width() // 4
         for i in range(4):
             frame = pygame.Surface(
-                (frame_width, moving_sheet.get_height()), pygame.SRCALPHA)
-            frame.blit(moving_sheet, (0, 0), (i * frame_width, 0,
-                       frame_width, moving_sheet.get_height()))
+                (frame_width, effect_sheet.get_height()), pygame.SRCALPHA)
+            frame.blit(effect_sheet, (0, 0), (i * frame_width, 0,
+                       frame_width, effect_sheet.get_height()))
             frame = pygame.transform.scale(frame, self.size)
             frame = pygame.transform.rotate(frame, -90)
-            self.engine_moving_frames.append(frame)
+            self.engine_effect_frames.append(frame)
 
-        self.current_engine_frame = 0
-        self.engine_animation_speed = 0.1  # seconds per frame
+        self.current_effect_frame = 0
+        self.engine_animation_speed = 0.1
         self.last_engine_update = 0
-        self.engine_image = self.engine_idle_image
-        self.engine_rect = self.engine_image.get_rect(center=self.position)
+        self.engine_effect_image = self.engine_effect_frames[0]
+        self.engine_effect_rect = self.engine_effect_image.get_rect(
+            center=self.position)
 
         self.update_sprite()
 
@@ -76,39 +79,35 @@ class PlayerShip:
         if self.rect:
             center = self.rect.center
             self.rect = self.image.get_rect(center=center)
-            self.engine_rect.center = center
+            self.engine_base_rect.center = center
+            self.engine_effect_rect.center = center
         else:
             self.rect = self.image.get_rect(center=self.position)
-            self.engine_rect.center = self.position
+            self.engine_base_rect.center = self.position
+            self.engine_effect_rect.center = self.position
 
     def move(self, dx, dy):
         self.is_moving = dx != 0 or dy != 0
 
-        # Calculate new position
-        new_x = self.rect.x + dx * self.speed
-        new_y = self.rect.y + dy * self.speed
+        # Calculate new position with boundaries
+        new_x = max(0, min(self.rect.x + dx * self.speed,
+                    WINDOW_WIDTH - self.rect.width))
+        new_y = max(0, min(self.rect.y + dy * self.speed,
+                    WINDOW_HEIGHT - self.rect.height))
+        self.rect.x, self.rect.y = new_x, new_y
 
-        # Apply screen boundaries
-        new_x = max(0, min(new_x, WINDOW_WIDTH - self.rect.width))
-        new_y = max(0, min(new_y, WINDOW_HEIGHT - self.rect.height))
+        # Update engine positions
+        self.engine_base_rect.center = self.rect.center
+        self.engine_effect_rect.center = self.rect.center
 
-        # Update position
-        self.rect.x = new_x
-        self.rect.y = new_y
-
+        # Animate effect if moving
         if self.is_moving:
-            # Update moving animation
             now = time.time()
             if now - self.last_engine_update > self.engine_animation_speed:
-                self.current_engine_frame = (
-                    self.current_engine_frame + 1) % len(self.engine_moving_frames)
-                self.engine_image = self.engine_moving_frames[self.current_engine_frame]
+                self.current_effect_frame = (
+                    self.current_effect_frame + 1) % len(self.engine_effect_frames)
+                self.engine_effect_image = self.engine_effect_frames[self.current_effect_frame]
                 self.last_engine_update = now
-        else:
-            # Switch back to idle image
-            self.engine_image = self.engine_idle_image
-
-        self.engine_rect.center = self.rect.center
 
     def take_damage(self):
         if self.health > 1:
@@ -116,13 +115,19 @@ class PlayerShip:
             self.update_sprite()
 
     def draw(self, surface):
-        # Draw engine first
-        surface.blit(self.engine_image, self.engine_rect)
-        # Draw ship above
+        # Always draw base engine first
+        surface.blit(self.engine_base_image, self.engine_base_rect)
+
+        # Draw moving effect on top if moving
+        if self.is_moving:
+            surface.blit(self.engine_effect_image, self.engine_effect_rect)
+
+        # Draw ship above everything
         surface.blit(self.image, self.rect)
 
-
 # === Background Handler ===
+
+
 class BackgroundAnimator:
     def __init__(self, sprite_paths):
         self.frames = [self.load_frames_from_sheet(
