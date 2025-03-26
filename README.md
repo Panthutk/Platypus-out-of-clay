@@ -23,3 +23,11 @@
 | **Bosses**         | Appear at timed intervals, combining enemy attack patterns and summoning reinforcements. | <img src="Enemy/_Previews/Dreadnought.gif" width="200"> |
 
 - **Endless Mode:** Test your endurance against infinite enemy waves and compete for high scores.
+
+## Game Controls
+
+| Action        | Key       |
+|---------------|-----------|
+| Movement      | W, A, S, D|
+| Shoot         | Space Bar |
+| Dash          | Left Shift |
