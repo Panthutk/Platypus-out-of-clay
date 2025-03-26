@@ -2,25 +2,24 @@
 
 ## Project Overview
 
-***Platyous Out of Clay*** is a 2D-side-scrolling shooting inspired by the classic game "Platypus" where player control a spaceship to battle again challenge enemies with the powerful power-up to defeat the boss and test your skill an endless mode
+***Platypus Out of Clay*** is a 2D side-scrolling shooter inspired by the classic game *"Platypus"* where players control a spaceship to battle challenging enemies, collect powerful power-ups, defeat bosses, and test their skills in an endless mode.
 
-## Feature
+## Features
 
 - **Dynamic Gameplay:** Navigate multiple levels with challenging enemy patterns.
-- **Power-ups:** Enhance your ship temporarily by collecting and customizing various power-ups:
+- **Power-ups:** Temporarily enhance your ship by collecting various power-ups:
   - **Shotgun Mode:** Fires multiple projectiles in a spread pattern.
   - **Increased Fire Rate:** Boosts projectile firing speed.
-  - **Beam Mode:** Continuous powerful laser beam.
-  - **Missile Mode:** Launches guided missiles using FSM to tracking.
+  - **Beam Mode:** Fires a continuous, powerful laser beam.
+  - **Missile Mode:** Launches guided missiles using FSM tracking.
 
-- **Enemy Types:** Diverse enemies each with unique behaviors:
-  - **Standard Enemy:** Moves horizontally, aiming directly at the player.
-  ![Gameplay GIF](Enemy/_Previews/Fighter.gif)
-  - **Tracking Enemy:** Launches missiles that track players for a limited time.
-  ![Gameplay GIF](Enemy/_Previews/Battlecruiser.gif)
-  - **Wave Enemy:** Moves in sine-wave patterns, dropping bombs.
-  ![Gameplay GIF](Enemy/_Previews/Torpedo.gif)
-  - **Bosses:** Appear at timed intervals, using combined enemy attack patterns and summoning reinforcements.
-  ![Gameplay GIF](Enemy/_Previews/Dreadnought.gif)
+- **Enemy Types:** Diverse enemies, each with unique behaviors:
 
-- **Endless Mode:** Test endurance by fighting endless waves of enemies for high-score competition.
+| Enemy Type       | Description                                                         | Preview                      |
+|------------------|---------------------------------------------------------------------|------------------------------|
+| **Standard Enemy** | Moves horizontally, aiming directly at the player.                  | <img src="Enemy/_Previews/Fighter.gif" width="200"> |
+| **Tracking Enemy** | Launches missiles that track players for a limited time.            | <img src="Enemy/_Previews/Battlecruiser.gif" width="200"> |
+| **Wave Enemy**     | Moves in sine-wave patterns, dropping bombs.                        | <img src="Enemy/_Previews/Torpedo.gif" width="200"> |
+| **Bosses**         | Appear at timed intervals, combining enemy attack patterns and summoning reinforcements. | <img src="Enemy/_Previews/Dreadnought.gif" width="200"> |
+
+- **Endless Mode:** Test your endurance against infinite enemy waves and compete for high scores.
