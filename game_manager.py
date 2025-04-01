@@ -1,6 +1,6 @@
-## === game_manager.py ===
 import pygame
 import time
+import random
 from player import PlayerShip, Bullet
 from enemy import Enemy
 
@@ -59,10 +59,15 @@ def main():
     # Create player (spawned near left side, vertically centered)
     player = PlayerShip((WINDOW_WIDTH // 12, WINDOW_HEIGHT // 2))
 
-    # Bullet tracking
+    # Game object tracking
     bullets = []
+    enemies = []
+
+    # Timing
     last_shot_time = 0
-    fire_delay = 0.3  # 0.3 seconds between bullets
+    fire_delay = 0.3  # seconds between bullets
+    last_enemy_spawn = time.time()
+    enemy_spawn_delay = 2  # seconds between enemy spawns
 
     # Game loop
     running = True
@@ -98,19 +103,32 @@ def main():
                 bullets.append(Bullet(player.auto_cannon_bullet_path, bullet_start_pos))
                 last_shot_time = now
 
-        # Update and draw everything
+        # Spawn enemies
+        now = time.time()
+        if now - last_enemy_spawn > enemy_spawn_delay:
+            enemies.append(Enemy())
+            last_enemy_spawn = now
+
+        # === Update + Draw ===
         background.update()
         background.draw(screen)
         player.draw(screen)
 
+        # Update bullets
         for bullet in bullets[:]:
             bullet.update()
             bullet.draw(screen)
             if bullet.rect.left > WINDOW_WIDTH:
                 bullets.remove(bullet)
 
+        # Update enemies
+        for enemy in enemies[:]:
+            enemy.update()
+            enemy.draw(screen)
+            if enemy.is_off_screen():
+                enemies.remove(enemy)
+
         pygame.display.flip()
         clock.tick(60)
 
     pygame.quit()
-
