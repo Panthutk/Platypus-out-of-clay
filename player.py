@@ -1,4 +1,4 @@
-## === player.py ===
+# === player.py ===
 import pygame
 import os
 import time
@@ -7,6 +7,8 @@ import time
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
 
 # === Bullet Class ===
+
+
 class Bullet:
     def __init__(self, image_path, start_pos, speed=10):
         self.sprite_sheet = pygame.image.load(image_path).convert_alpha()
@@ -24,6 +26,7 @@ class Bullet:
         self.animation_speed = 0.1
         self.last_update_time = time.time()
         self.rect = self.frames[0].get_rect(center=start_pos)
+        self.mask = pygame.mask.from_surface(self.frames[0])
         self.speed = speed
 
     def update(self):
@@ -96,8 +99,10 @@ class PlayerShip:
         cannon_sheet = pygame.image.load(self.auto_cannon_path).convert_alpha()
         cannon_frame_width = cannon_sheet.get_width() // 7
         for i in range(7):
-            frame = pygame.Surface((cannon_frame_width, cannon_sheet.get_height()), pygame.SRCALPHA)
-            frame.blit(cannon_sheet, (0, 0), (i * cannon_frame_width, 0, cannon_frame_width, cannon_sheet.get_height()))
+            frame = pygame.Surface(
+                (cannon_frame_width, cannon_sheet.get_height()), pygame.SRCALPHA)
+            frame.blit(cannon_sheet, (0, 0), (i * cannon_frame_width,
+                       0, cannon_frame_width, cannon_sheet.get_height()))
             frame = pygame.transform.scale(frame, self.size)
             frame = pygame.transform.rotate(frame, -90)
             self.auto_cannon_frames.append(frame)
@@ -106,7 +111,8 @@ class PlayerShip:
         self.cannon_animation_speed = 0.1
         self.last_cannon_update = 0
         self.auto_cannon_image = self.auto_cannon_frames[0]
-        self.auto_cannon_rect = self.auto_cannon_image.get_rect(center=self.position)
+        self.auto_cannon_rect = self.auto_cannon_image.get_rect(
+            center=self.position)
 
         self.update_sprite()
 
@@ -173,7 +179,8 @@ class PlayerShip:
         if self.firing:
             now = time.time()
             if now - self.last_cannon_update > self.cannon_animation_speed:
-                self.current_cannon_frame = (self.current_cannon_frame + 1) % len(self.auto_cannon_frames)
+                self.current_cannon_frame = (
+                    self.current_cannon_frame + 1) % len(self.auto_cannon_frames)
                 self.auto_cannon_image = self.auto_cannon_frames[self.current_cannon_frame]
                 self.last_cannon_update = now
         else:
