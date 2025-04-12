@@ -2,6 +2,7 @@
 import pygame
 import random
 import time
+import math
 
 # Constants
 WINDOW_WIDTH = 1280
@@ -21,6 +22,9 @@ ENEMY_TYPES = [
         "health": 20,
         "projectile_speed": 5,
         "score": 100,
+        "weapon_frames": 28,
+        "projectile_frames": 4,
+        "fire_delay": 3,
     },
     {
         "name": "Torpedo",
@@ -34,6 +38,9 @@ ENEMY_TYPES = [
         "health": 30,
         "projectile_speed": 4,
         "score": 150,
+        "weapon_frames": 12,
+        "projectile_frames": 4,
+        "fire_delay": 10,
     },
     {
         "name": "Battlecruiser",
@@ -47,47 +54,74 @@ ENEMY_TYPES = [
         "health": 50,
         "projectile_speed": 3,
         "score": 200,
+        "weapon_frames": 9,
+        "projectile_frames": 4,
+        "fire_delay": 5,
     },
 ]
 
 # Higher number = higher spawn chance
-SPAWN_WEIGHTS = [10, 4, 3]  # Fighter common, Torpedo , Battlecruiser
+SPAWN_WEIGHTS = [10, 4, 3]  # fighter, torpedo, battlecruiser
 
 # === Enemy Class ===
 
 
 class Enemy:
     def __init__(self):
-        # Choose enemy type
+        # Choose enemy type based on weighted random
         data = random.choices(ENEMY_TYPES, weights=SPAWN_WEIGHTS, k=1)[0]
         self.data = data
         self.speed = data["speed"]
         self.size = data["size"]
         self.health = data["health"]
         self.score = data["score"]
+        self.projectile_speed = data["projectile_speed"]
 
-        # Load and transform image
-        original = pygame.image.load(data["path"]).convert_alpha()
-        scaled = pygame.transform.scale(original, self.size)
-        self.image = pygame.transform.rotate(scaled, 90)
-        self.rect = self.image.get_rect()
+        # Load all required assets
+        self.base_image = self.load_image(data["path"])
+        self.weapon_frames = self.load_frames(
+            data["weaponAnimation"], data["weapon_frames"])
+        self.projectile_frames = self.load_frames(
+            data["projectile"], data["projectile_frames"], scale_ratio=0.25)
+        self.engine_frames = self.load_frames(data["engine"], 8)
+        self.destroyed_frames = self.load_frames(
+            data["destroyed"], self.get_destroyed_frame_count())
+
+        # Setup position and collision mask
+        self.rect = self.base_image.get_rect()
         self.rect.x = WINDOW_WIDTH + random.randint(0, 300)
         self.rect.y = random.randint(50, WINDOW_HEIGHT - self.size[1])
+        self.mask = pygame.mask.from_surface(self.base_image)
 
-        self.mask = pygame.mask.from_surface(
-            self.image)  # For pixel-perfect collision
+        # Engine animation state
+        self.current_engine_frame = 0
+        self.engine_fps = 15
+        self.last_engine_update = 0
 
-        # Destroyed animation setup
+        # Weapon animation state
+        self.weapon_frame_index = 0
+        self.weapon_fps = 10
+        self.last_weapon_update = 0
+        self.is_firing = False
+
+        # Projectile logic
+        self.projectiles = []
+        self.projectile_lifetime = 3  # Time before it stops tracking
+
+        # Destroyed animation state
         self.destroyed = False
-        self.destroyed_frames = self.load_destroyed_frames(
-            data["destroyed"], frame_count=self.get_destroyed_frame_count())
+        self.destruction_finished = False
         self.current_destroyed_frame = 0
         self.destroyed_fps = 30
         self.last_destroyed_update = 0
-        self.destruction_finished = False
+
+        # Fire delay tracking
+        self.last_fire_time = 0
+        self.spawn_time = time.time()
+        self.sine_offset = random.uniform(0, 2 * math.pi)
 
     def get_destroyed_frame_count(self):
-        # Return correct frame count for each ship type
+        # Return number of explosion frames
         name = self.data["name"]
         if name == "Fighter":
             return 18
@@ -97,30 +131,105 @@ class Enemy:
             return 18
         return 16
 
-    def load_destroyed_frames(self, sheet_path, frame_count):
-        # Slice explosion frames from sprite sheet
-        sheet = pygame.image.load(sheet_path).convert_alpha()
-        sheet_width = sheet.get_width()
-        frame_width = sheet_width // frame_count
+    def load_image(self, path):
+        # Load and rotate enemy base image
+        img = pygame.image.load(path).convert_alpha()
+        img = pygame.transform.scale(img, self.size)
+        return pygame.transform.rotate(img, 90)
+
+    def load_frames(self, path, count, scale_ratio=1.0):
+        # Slice frames from sprite sheet
+        sheet = pygame.image.load(path).convert_alpha()
+        frame_width = sheet.get_width() // count
         frame_height = sheet.get_height()
         frames = []
-        for i in range(frame_count):
+        for i in range(count):
             frame = pygame.Surface(
                 (frame_width, frame_height), pygame.SRCALPHA)
             frame.blit(sheet, (0, 0), (i * frame_width,
                        0, frame_width, frame_height))
-            frame = pygame.transform.scale(frame, self.size)
+            scaled_size = (
+                int(self.size[0] * scale_ratio), int(self.size[1] * scale_ratio))
+            frame = pygame.transform.scale(frame, scaled_size)
             frame = pygame.transform.rotate(frame, 90)
             frames.append(frame)
         return frames
 
-    def update(self):
-        # Move left if not destroyed
+    def update(self, player):
+        # Update behavior every frame
+        now = time.time()
+
         if not self.destroyed:
+            # Move enemy to the left
             self.rect.x -= self.speed
-        # Explosion animation if destroyed
+
+            # Fighter moves toward player vertically
+            if self.data["name"] == "Fighter":
+                if self.rect.centery < player.rect.centery:
+                    self.rect.y += self.speed
+                elif self.rect.centery > player.rect.centery:
+                    self.rect.y -= self.speed
+
+            # Torpedo moves in sine wave
+            elif self.data["name"] == "Torpedo":
+                t = now - self.spawn_time
+                self.rect.y += math.sin(t * 4 + self.sine_offset) * 2
+
+            # Battlecruiser shooting logic
+            if self.data["name"] == "Battlecruiser":
+                if not self.is_firing and now - self.last_fire_time > self.data["fire_delay"]:
+                    self.is_firing = True
+                    self.weapon_frame_index = 0
+                    self.last_weapon_update = now
+
+            # Animate engine
+            if now - self.last_engine_update > 1 / self.engine_fps:
+                self.current_engine_frame = (
+                    self.current_engine_frame + 1) % len(self.engine_frames)
+                self.last_engine_update = now
+
+            # Weapon firing animation
+            if self.is_firing:
+                if now - self.last_weapon_update > 1 / self.weapon_fps:
+                    self.weapon_frame_index += 1
+                    self.last_weapon_update = now
+
+                    # Fire projectile at frame 4 (Battlecruiser only)
+                    if self.weapon_frame_index == 4 and self.data["name"] == "Battlecruiser":
+                        dx = player.rect.centerx - self.rect.centerx
+                        dy = player.rect.centery - self.rect.centery
+                        angle = math.atan2(dy, dx)
+                        self.projectiles.append({
+                            "x": self.rect.centerx,
+                            "y": self.rect.centery,
+                            "angle": angle,
+                            "vx": math.cos(angle) * self.projectile_speed,
+                            "vy": math.sin(angle) * self.projectile_speed,
+                            "start_time": now,
+                            "frame": 0,
+                            "frame_timer": now,
+                            "state": "tracking"
+                        })
+
+                    # End of firing animation
+                    if self.weapon_frame_index >= len(self.weapon_frames):
+                        self.is_firing = False
+                        self.last_fire_time = now
+
+            # Update all projectiles
+            for p in self.projectiles:
+                if p["state"] == "tracking" and now - p["start_time"] > self.projectile_lifetime:
+                    p["state"] = "moving"
+
+                p["x"] += p["vx"]
+                p["y"] += p["vy"]
+
+                if now - p["frame_timer"] > 0.1:
+                    p["frame"] = (p["frame"] + 1) % len(self.projectile_frames)
+                    p["frame_timer"] = now
+
         elif not self.destruction_finished:
-            now = time.time()
+            # Update explosion animation
             if now - self.last_destroyed_update > 1 / self.destroyed_fps:
                 self.current_destroyed_frame += 1
                 if self.current_destroyed_frame >= len(self.destroyed_frames):
@@ -128,26 +237,42 @@ class Enemy:
                     self.health = 0
                 self.last_destroyed_update = now
 
-    def take_damage(self, damage):
+    def draw(self, surface):
+        # Draw engine effect
         if not self.destroyed:
-            self.health -= damage
+            surface.blit(
+                self.engine_frames[self.current_engine_frame], self.rect)
+
+            # Draw weapon animation if firing
+            if self.is_firing:
+                surface.blit(self.weapon_frames[self.weapon_frame_index % len(
+                    self.weapon_frames)], self.rect)
+            else:
+                surface.blit(self.base_image, self.rect)
+        elif not self.destruction_finished:
+            # Draw explosion animation
+            surface.blit(
+                self.destroyed_frames[self.current_destroyed_frame], self.rect)
+
+        # Draw all projectiles
+        for p in self.projectiles:
+            img = self.projectile_frames[p["frame"]]
+            rect = img.get_rect(center=(p["x"], p["y"]))
+            surface.blit(img, rect)
+
+    def take_damage(self, dmg):
+        # Subtract health and trigger destruction if zero
+        if not self.destroyed:
+            self.health -= dmg
             if self.health <= 0:
                 self.trigger_destruction()
 
     def trigger_destruction(self):
-        # Trigger the explosion animation
+        # Start explosion animation
         self.destroyed = True
-        self.current_destroyed_frame = -1  # Prevent flicker of first real frame
-        # Force immediate frame 0 next update
+        self.current_destroyed_frame = -1
         self.last_destroyed_update = time.time() - (1 / self.destroyed_fps)
 
-    def draw(self, surface):
-        if self.destroyed and not self.destruction_finished:
-            surface.blit(
-                self.destroyed_frames[self.current_destroyed_frame], self.rect)
-        else:
-            surface.blit(self.image, self.rect)
-
     def is_off_screen(self):
-        # Mark for removal if offscreen or fully destroyed
+        # Check if enemy should be removed
         return self.rect.right < 0 or (self.destroyed and self.destruction_finished and self.health <= 0)

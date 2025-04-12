@@ -30,7 +30,7 @@ class BackgroundAnimator:
             frame = pygame.Surface(
                 (FRAME_WIDTH, FRAME_HEIGHT), pygame.SRCALPHA)
             frame.blit(sheet, (0, 0), (i * FRAME_WIDTH,
-                       0, FRAME_WIDTH, FRAME_HEIGHT))
+                                       0, FRAME_WIDTH, FRAME_HEIGHT))
             frame = pygame.transform.scale(
                 frame, (WINDOW_WIDTH, WINDOW_HEIGHT))
             frames.append(frame)
@@ -47,7 +47,7 @@ class BackgroundAnimator:
             self.current_bg_index = (
                 self.current_bg_index + 1) % len(self.frames)
             self.current_frame_index = 0
-            self.last_bg_switch_time = now
+            self.last_bg_switch_time = time.time()
 
     def draw(self, surface):
         surface.blit(self.frames[self.current_bg_index]
@@ -138,7 +138,8 @@ def main():
 
         # Update and draw enemies
         for enemy in enemies[:]:
-            enemy.update()
+            # Update enemy position and state for missiles
+            enemy.update(player)
             enemy.draw(screen)
             if enemy.is_off_screen():
                 enemies.remove(enemy)
