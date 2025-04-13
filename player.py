@@ -51,6 +51,7 @@ class PlayerShip:
         self.engine_effect_path = "playership/MainShip/Engines/Moving.png"
         self.auto_cannon_path = "playership/MainShip/Weapons/AutoCannon.png"
         self.auto_cannon_bullet_path = "playership/MainShipWeapon/Autocannonbullet.png"
+        self.shield = "playership/MainShip/Shields/fontshield.png"
 
         self.size = 144, 144
         self.health = 4
@@ -114,6 +115,27 @@ class PlayerShip:
         self.auto_cannon_rect = self.auto_cannon_image.get_rect(
             center=self.position)
 
+        # Shield attributes
+        self.shield_frames = []
+        self.shield_active = False
+        self.shield_start_time = 0
+        self.shield_duration = 3  # seconds
+        self.shield_frame_index = 0
+        self.shield_fps = 15
+        self.last_shield_update = 0
+
+        # Load shield animation frames (10 total)
+        shield_sheet = pygame.image.load(self.shield).convert_alpha()
+        shield_frame_width = shield_sheet.get_width() // 10
+        for i in range(10):
+            frame = pygame.Surface(
+                (shield_frame_width, shield_sheet.get_height()), pygame.SRCALPHA)
+            frame.blit(shield_sheet, (0, 0), (i * shield_frame_width, 0,
+                       shield_frame_width, shield_sheet.get_height()))
+            frame = pygame.transform.scale(frame, self.size)
+            frame = pygame.transform.rotate(frame, -90)
+            self.shield_frames.append(frame)
+
         self.update_sprite()
 
     def update_sprite(self):
@@ -168,9 +190,19 @@ class PlayerShip:
                 self.last_engine_update = now
 
     def take_damage(self):
+        if self.shield_active:
+            return  # Shield is active block the damage
+
         if self.health > 1:
             self.health -= 1
             self.update_sprite()
+            self.activate_shield()
+
+    def activate_shield(self):
+        self.shield_active = True
+        self.shield_start_time = time.time()
+        self.shield_frame_index = 0
+        self.last_shield_update = 0
 
     def draw(self, surface):
         # Always draw base engine first
@@ -193,6 +225,19 @@ class PlayerShip:
         # Draw moving effect on top if moving
         if self.is_moving:
             surface.blit(self.engine_effect_image, self.engine_effect_rect)
+
+        # Draw shield animation if active
+        if self.shield_active:
+            now = time.time()
+            if now - self.shield_start_time > self.shield_duration:
+                self.shield_active = False
+            else:
+                if now - self.last_shield_update > 1 / self.shield_fps:
+                    self.shield_frame_index = (
+                        self.shield_frame_index + 1) % len(self.shield_frames)
+                    self.last_shield_update = now
+                shield_image = self.shield_frames[self.shield_frame_index]
+                surface.blit(shield_image, self.rect)
 
         # Draw ship above everything
         surface.blit(self.image, self.rect)

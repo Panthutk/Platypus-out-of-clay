@@ -141,6 +141,13 @@ def main():
             # Update enemy position and state for missiles
             enemy.update(player)
             enemy.draw(screen)
+
+            # Pixel-perfect collision between player and enemy ship
+            offset = (player.rect.x - enemy.rect.x,
+                      player.rect.y - enemy.rect.y)
+            if enemy.mask.overlap(player.mask, offset):
+                player.take_damage()
+
             if enemy.is_off_screen():
                 enemies.remove(enemy)
 
@@ -154,7 +161,7 @@ def main():
                 offset = (player.rect.x - projectile_rect.x,
                           player.rect.y - projectile_rect.y)
                 if projectile_mask.overlap(player.mask, offset):
-                    player.take_damage()  # this will also update the sprite
+                    player.take_damage()  # update the sprite
                     enemy.projectiles.remove(p)
 
         pygame.display.flip()
