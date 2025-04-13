@@ -144,6 +144,19 @@ def main():
             if enemy.is_off_screen():
                 enemies.remove(enemy)
 
+            # Pixel-perfect projectile-player collision detection
+            for p in enemy.projectiles[:]:
+                projectile_img = enemy.projectile_frames[p["frame"]]
+                projectile_rect = projectile_img.get_rect(
+                    center=(p["x"], p["y"]))
+                projectile_mask = pygame.mask.from_surface(projectile_img)
+
+                offset = (player.rect.x - projectile_rect.x,
+                          player.rect.y - projectile_rect.y)
+                if projectile_mask.overlap(player.mask, offset):
+                    player.take_damage()  # this will also update the sprite
+                    enemy.projectiles.remove(p)
+
         pygame.display.flip()
         clock.tick(60)
 

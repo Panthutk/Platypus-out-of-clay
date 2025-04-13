@@ -141,6 +141,7 @@ class PlayerShip:
         self.engine_base_rect.center = self.rect.center
         self.engine_effect_rect.center = self.rect.center
         self.auto_cannon_rect.center = self.rect.center
+        self.mask = pygame.mask.from_surface(self.image)  # <- update mask here
 
     def move(self, dx, dy):
         self.is_moving = dx != 0 or dy != 0
