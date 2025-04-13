@@ -15,7 +15,7 @@ ENEMY_TYPES = [
         "path": "Enemy/EnemyShipAsset/Base/Fighter.png",
         "engine": "Enemy/EnemyShipAsset/Engines/Fighter.png",
         "weaponAnimation": "Enemy/EnemyShipAsset/Weapons/Fighter.png",
-        "projectile": "Enemy/EnemyShipAsset/Projectiles/Ray.png",
+        "projectile": "Enemy/EnemyShipAsset/Projectiles/Bolt.png",
         "destroyed": "Enemy/EnemyShipAsset/Destroyed/Fighter.png",
         "speed": 3,
         "size": (192, 192),
@@ -23,7 +23,7 @@ ENEMY_TYPES = [
         "projectile_speed": 5,
         "score": 100,
         "weapon_frames": 28,
-        "projectile_frames": 4,
+        "projectile_frames": 5,
         "fire_delay": 3,
     },
     {
@@ -39,8 +39,8 @@ ENEMY_TYPES = [
         "projectile_speed": 4,
         "score": 150,
         "weapon_frames": 12,
-        "projectile_frames": 4,
-        "fire_delay": 10,
+        "projectile_frames": 3,
+        "fire_delay": 5,
     },
     {
         "name": "Battlecruiser",
@@ -163,17 +163,71 @@ class Enemy:
             # Move enemy to the left
             self.rect.x -= self.speed
 
-            # Fighter moves toward player vertically
+            # Fighter moves randomly up/down and fires forward
             if self.data["name"] == "Fighter":
-                if self.rect.centery < player.rect.centery:
-                    self.rect.y += self.speed
-                elif self.rect.centery > player.rect.centery:
-                    self.rect.y -= self.speed
+                if not self.is_firing and now - self.last_fire_time > self.data["fire_delay"]:
+                    self.is_firing = True
+                    self.weapon_frame_index = 0
+                    self.last_weapon_update = now
+
+                if self.is_firing:
+                    if now - self.last_weapon_update > 1 / self.weapon_fps:
+                        self.weapon_frame_index += 1
+                        self.last_weapon_update = now
+
+                        if self.weapon_frame_index == 4:
+                            self.projectiles.append({
+                                "x": self.rect.centerx,
+                                "y": self.rect.centery,
+                                "angle": 0,
+                                "vx": -self.projectile_speed,
+                                "vy": 0,
+                                "start_time": now,
+                                "frame": 0,
+                                "frame_timer": now,
+                                "state": "moving"
+                            })
+
+                        if self.weapon_frame_index >= len(self.weapon_frames):
+                            self.is_firing = False
+                            self.last_fire_time = now
+
+                if not hasattr(self, 'vertical_direction'):
+                    self.vertical_direction = random.choice([-1, 1])
+                    self.vertical_timer = now
+
+                if now - self.vertical_timer > random.uniform(1, 3):
+                    self.vertical_direction *= -1
+                    self.vertical_timer = now
+
+                self.rect.y += self.vertical_direction * self.speed
+
+                if self.rect.top < 0:
+                    self.rect.top = 0
+                    self.vertical_direction = 1
+                elif self.rect.bottom > WINDOW_HEIGHT:
+                    self.rect.bottom = WINDOW_HEIGHT
+                    self.vertical_direction = -1
 
             # Torpedo moves in sine wave
             elif self.data["name"] == "Torpedo":
                 t = now - self.spawn_time
                 self.rect.y += math.sin(t * 4 + self.sine_offset) * 2
+
+                # Fire downward projectile every 5 seconds
+                if now - self.last_fire_time > self.data["fire_delay"]:
+                    self.projectiles.append({
+                        "x": self.rect.centerx,
+                        "y": self.rect.bottom,
+                        "angle": math.pi / 2,
+                        "vx": 0,
+                        "vy": self.projectile_speed,
+                        "start_time": now,
+                        "frame": 0,
+                        "frame_timer": now,
+                        "state": "moving"
+                    })
+                    self.last_fire_time = now
 
             # Battlecruiser shooting logic
             if self.data["name"] == "Battlecruiser":
@@ -257,6 +311,8 @@ class Enemy:
         # Draw all projectiles
         for p in self.projectiles:
             img = self.projectile_frames[p["frame"]]
+            if p["vx"] > 0:
+                img = pygame.transform.flip(img, True, False)
             rect = img.get_rect(center=(p["x"], p["y"]))
             surface.blit(img, rect)
 
