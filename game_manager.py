@@ -4,6 +4,8 @@ import time
 import random
 from player import PlayerShip, Bullet
 from enemy import Enemy
+pygame.font.init()
+score_font = pygame.font.SysFont("Arial", 32)
 
 # Constants
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
@@ -30,7 +32,7 @@ class BackgroundAnimator:
             frame = pygame.Surface(
                 (FRAME_WIDTH, FRAME_HEIGHT), pygame.SRCALPHA)
             frame.blit(sheet, (0, 0), (i * FRAME_WIDTH,
-                                       0, FRAME_WIDTH, FRAME_HEIGHT))
+                       0, FRAME_WIDTH, FRAME_HEIGHT))
             frame = pygame.transform.scale(
                 frame, (WINDOW_WIDTH, WINDOW_HEIGHT))
             frames.append(frame)
@@ -77,6 +79,19 @@ def main():
     last_enemy_spawn = time.time()
     fire_delay = 0.3  # 0.3 seconds between bullets
     enemy_spawn_delay = 2  # Spawn delay for enemies
+    score = 0
+
+    # Timer
+    start_time = time.time()
+    blink = False
+    blink_start = 0
+    blink_duration = 0.3
+    last_minute_triggered = -1
+
+    # Dynamic scaling factors
+    enemy_health_multiplier = 1.0
+    enemy_speed_multiplier = 1.0
+    fire_delay_multiplier = 1.0
 
     # Game loop
     running = True
@@ -102,7 +117,7 @@ def main():
         player.firing = keys[pygame.K_SPACE]
 
         # Auto-fire bullets if spacebar is held
-        if player.firing and time.time() - last_shot_time > fire_delay:
+        if player.firing and time.time() - last_shot_time > fire_delay * fire_delay_multiplier:
             bullet_start_pos = (player.rect.centerx +
                                 player.rect.width // 2, player.rect.centery)
             bullets.append(
@@ -128,17 +143,21 @@ def main():
                           enemy.rect.y - bullet.rect.y)
                 if bullet.mask.overlap(enemy.mask, offset):
                     enemy.take_damage(player.firepower)
+                    if enemy.health <= 0 and enemy.destroyed:
+                        score += enemy.score
                     bullets.remove(bullet)
                     break  # Bullet hits one enemy only
 
         # Spawn new enemies
         if time.time() - last_enemy_spawn > enemy_spawn_delay:
-            enemies.append(Enemy())
+            new_enemy = Enemy()
+            new_enemy.health = int(new_enemy.health * enemy_health_multiplier)
+            new_enemy.speed *= enemy_speed_multiplier
+            enemies.append(new_enemy)
             last_enemy_spawn = time.time()
 
         # Update and draw enemies
         for enemy in enemies[:]:
-            # Update enemy position and state for missiles
             enemy.update(player)
             enemy.draw(screen)
 
@@ -161,10 +180,50 @@ def main():
                 offset = (player.rect.x - projectile_rect.x,
                           player.rect.y - projectile_rect.y)
                 if projectile_mask.overlap(player.mask, offset):
-                    player.take_damage()  # update the sprite
+                    player.take_damage()
                     enemy.projectiles.remove(p)
+
+        # Score display
+        score_surface = score_font.render(
+            f"Score: {score}", True, (255, 255, 255))
+        screen.blit(score_surface, (10, 10))
+
+        # Health display
+        health_surface = score_font.render(
+            f"Health: {player.health}", True, (255, 255, 255))
+        screen.blit(health_surface, (10, 50))
+
+        # Timer display (top right)
+        elapsed = int(time.time() - start_time)
+        minutes = elapsed // 60
+        seconds = elapsed % 60
+
+        if minutes > last_minute_triggered and minutes > 0:
+            blink = True
+            blink_start = time.time()
+            last_minute_triggered = minutes
+
+            # Increase difficulty every minute
+            enemy_health_multiplier += 0.1  # Increase enemy health
+            enemy_speed_multiplier += 0.05  # Increase enemy speed
+            # Decrease player fire cooldown
+            fire_delay_multiplier = max(0.1, fire_delay_multiplier - 0.02)
+            print("Difficulty increased! New multipliers:",)
+
+        if blink and time.time() - blink_start > blink_duration:
+            blink = False
+
+        if not blink:
+            time_text = f"{minutes:02}:{seconds:02}"
+            timer_surface = score_font.render(time_text, True, (255, 255, 255))
+            screen.blit(timer_surface, (WINDOW_WIDTH -
+                        timer_surface.get_width() - 10, 10))
 
         pygame.display.flip()
         clock.tick(60)
 
     pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
