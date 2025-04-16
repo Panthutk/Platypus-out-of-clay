@@ -2,7 +2,7 @@
 import pygame
 import os
 import time
-
+import math
 # Constants
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
 
@@ -41,6 +41,70 @@ class Bullet:
         if now - self.last_update_time > self.animation_speed:
             self.current_frame = (self.current_frame + 1) % len(self.frames)
             self.last_update_time = now
+
+    def draw(self, surface):
+        surface.blit(self.frames[self.current_frame], self.rect)
+
+# === Missile Class (FSM) ===
+
+
+# === Missile Class ===
+class Missile:
+    def __init__(self, image_path, start_pos, player, enemies):
+        self.sprite_sheet = pygame.image.load(image_path).convert_alpha()
+        self.frames = []
+        self.speed = 5
+        self.state = "tracking"
+        self.target = self.find_nearest_enemy(enemies, player.rect.center)
+        self.start_time = time.time()
+        self.lifetime = 3  # seconds
+
+        # Resize the sprite sheet
+        frame_width = self.sprite_sheet.get_width() // 3
+        target_width = 64
+        target_height = 64
+
+        # load the frames
+        for i in range(3):
+            frame = pygame.Surface(
+                (frame_width, self.sprite_sheet.get_height()), pygame.SRCALPHA)
+            frame.blit(self.sprite_sheet, (0, 0), (i * frame_width,
+                       0, frame_width, self.sprite_sheet.get_height()))
+            frame = pygame.transform.scale(
+                frame, (target_width, target_height))
+            frame = pygame.transform.rotate(frame, -90)
+            self.frames.append(frame)
+
+        self.current_frame = 0
+        self.last_frame_time = time.time()
+        self.rect = self.frames[0].get_rect(center=start_pos)
+        self.mask = pygame.mask.from_surface(self.frames[0])
+        self.vx, self.vy = 7, 0  # default movement
+
+    def find_nearest_enemy(self, enemies, origin):
+        if not enemies:
+            return None
+        return min(enemies, key=lambda e: (e.rect.centerx - origin[0]) ** 2 + (e.rect.centery - origin[1]) ** 2)
+
+    def update(self):
+        now = time.time()
+
+        if self.state == "tracking" and self.target:
+            dx = self.target.rect.centerx - self.rect.centerx
+            dy = self.target.rect.centery - self.rect.centery
+            distance = math.hypot(dx, dy)
+            if distance > 0:
+                self.vx = dx / distance * self.speed
+                self.vy = dy / distance * self.speed
+            if now - self.start_time > self.lifetime:
+                self.state = "moving"
+
+        self.rect.x += self.vx
+        self.rect.y += self.vy
+
+        if now - self.last_frame_time > 0.1:
+            self.current_frame = (self.current_frame + 1) % len(self.frames)
+            self.last_frame_time = now
 
     def draw(self, surface):
         surface.blit(self.frames[self.current_frame], self.rect)

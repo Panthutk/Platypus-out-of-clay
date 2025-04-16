@@ -3,7 +3,7 @@ import pygame
 import time
 import random
 import math
-from player import PlayerShip, Bullet
+from player import PlayerShip, Bullet, Missile
 from enemy import Enemy
 from powerup import PowerUp
 
@@ -79,6 +79,7 @@ def main():
     bullets = []
     enemies = []  # Enemy list
     powerups = []  # Power-up list
+    missiles = []  # Missile list
     active_powerups = {}  # effect -> end_time
 
     last_shot_time = 0
@@ -144,6 +145,12 @@ def main():
                         bullet.speed_y = vy
                         bullets.append(bullet)
                     last_shotgun_time = now
+            elif "missile" in active_powerups and active_powerups["missile"] > now:
+                if now - last_shot_time > 1:
+                    missile = Missile(
+                        "playership/MainShipWeapon/Rocket.png", (base_x, base_y), player, enemies)
+                    missiles.append(missile)
+                    last_shot_time = now
             else:
                 if now - last_shot_time > fire_delay * fire_delay_multiplier * firerate_multiplier:
 
@@ -172,18 +179,33 @@ def main():
                 if bullet.mask.overlap(enemy.mask, offset):
                     enemy.take_damage(player.firepower)
                     if enemy.health <= 0 and enemy.destroyed:
-                        score += enemy.score
-                        # Chance to drop power-up
-                        chance = random.random()
-                        if chance < 0.2:
-                            powerups.append(
-                                PowerUp(enemy.rect.centerx, enemy.rect.centery, "SG"))
-                        elif chance < 0.4:
-                            powerups.append(
-                                PowerUp(enemy.rect.centerx, enemy.rect.centery, "IF"))
+                        if not hasattr(enemy, "powerup_dropped"):
+                            enemy.powerup_dropped = True
+                            score += enemy.score
+                            if random.random() < 0.3:
+                                selected = random.choice(["SG", "IF", "MS"])
+                                powerups.append(
+                                    PowerUp(enemy.rect.centerx, enemy.rect.centery, selected))
                     bullets.remove(bullet)
                     break  # Bullet hits one enemy only
 
+        # Update missiles and check collision
+        for missile in missiles[:]:
+            missile.update()
+            missile.draw(screen)
+            if missile.rect.left > WINDOW_WIDTH or missile.rect.top < 0 or missile.rect.bottom > WINDOW_HEIGHT:
+                missiles.remove(missile)
+                continue
+            for enemy in enemies:
+                offset = (enemy.rect.x - missile.rect.x,
+                          enemy.rect.y - missile.rect.y)
+                if missile.mask.overlap(enemy.mask, offset):
+                    enemy.take_damage(30)
+                    if enemy.health <= 0 and enemy.destroyed:
+                        score += enemy.score
+                    if missile in missiles:
+                        missiles.remove(missile)
+                    break
         # Spawn new enemies
         if time.time() - last_enemy_spawn > enemy_spawn_delay:
             new_enemy = Enemy()

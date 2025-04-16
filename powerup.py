@@ -14,6 +14,12 @@ POWERUP_TYPES = {
         "color": (0, 255, 255),
         "duration": 8,
         "effect": "firerate"
+    },
+    "MS": {
+        "label": "MS",
+        "color": (255, 100, 100),
+        "duration": 10,
+        "effect": "missile"
     }
 }
 
