@@ -288,6 +288,29 @@ def main():
             screen.blit(timer_surface, (WINDOW_WIDTH -
                         timer_surface.get_width() - 10, 10))
 
+        # Current power-ups display
+        blinking = int(time.time() * 2) % 2 == 0
+        current_effects = []
+        has_active = False
+        for key, end_time in active_powerups.items():
+            remaining = end_time - time.time()
+            if remaining > 0:
+                has_active = True
+                label = key.upper()
+                if remaining <= 3 and blinking:
+                    continue  # Skip rendering this tick to blink
+                current_effects.append(label)
+        if has_active:
+            if current_effects:
+                powerup_text = "Power-Ups: " + ", ".join(current_effects)
+            else:
+                powerup_text = "Power-Ups: "  # still show label line when blinking
+        else:
+            powerup_text = "Power-Ups: None"
+        powerup_surface = score_font.render(
+            powerup_text, True, (255, 255, 255))
+        screen.blit(powerup_surface, (10, WINDOW_HEIGHT - 40))
+
         pygame.display.flip()
         clock.tick(60)
 
