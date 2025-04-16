@@ -46,6 +46,7 @@ python3 main.py
 
   * SG: Shotgun (5-way spread)
   * IF: Increased Fire Rate
+  * MS: Missile (FSM)
 
 * Display of active power-ups with blinking expiration warning
 
