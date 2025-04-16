@@ -2,8 +2,11 @@
 import pygame
 import time
 import random
+import math
 from player import PlayerShip, Bullet
 from enemy import Enemy
+from powerup import PowerUp
+
 pygame.font.init()
 score_font = pygame.font.SysFont("Arial", 32)
 
@@ -75,10 +78,16 @@ def main():
     # Bullet tracking
     bullets = []
     enemies = []  # Enemy list
+    powerups = []  # Power-up list
+    active_powerups = {}  # effect -> end_time
+
     last_shot_time = 0
-    last_enemy_spawn = time.time()
-    fire_delay = 0.3  # 0.3 seconds between bullets
+    last_shotgun_time = 0
+    fire_delay = 0.25  # 0.3 seconds between bullets
+    firerate_multiplier = 1.0  # 1.0x fire rate
+    shotgun_fire_delay = 0.6  # slower than regular
     enemy_spawn_delay = 2  # Spawn delay for enemies
+    last_enemy_spawn = time.time()
     score = 0
 
     # Timer
@@ -117,12 +126,31 @@ def main():
         player.firing = keys[pygame.K_SPACE]
 
         # Auto-fire bullets if spacebar is held
-        if player.firing and time.time() - last_shot_time > fire_delay * fire_delay_multiplier:
-            bullet_start_pos = (player.rect.centerx +
-                                player.rect.width // 2, player.rect.centery)
-            bullets.append(
-                Bullet(player.auto_cannon_bullet_path, bullet_start_pos))
-            last_shot_time = time.time()
+        now = time.time()
+        base_x = player.rect.centerx + player.rect.width // 2
+        base_y = player.rect.centery
+
+        if player.firing:
+            if "shotgun" in active_powerups and active_powerups["shotgun"] > now:
+                if now - last_shotgun_time > shotgun_fire_delay:
+                    # 5-way shotgun spread
+                    spread_angles = [-0.4, -0.2, 0, 0.2, 0.4]
+                    for angle in spread_angles:
+                        vx = math.cos(angle) * 10
+                        vy = math.sin(angle) * 10
+                        bullet = Bullet(
+                            player.auto_cannon_bullet_path, (base_x, base_y))
+                        bullet.speed_x = vx
+                        bullet.speed_y = vy
+                        bullets.append(bullet)
+                    last_shotgun_time = now
+            else:
+                if now - last_shot_time > fire_delay * fire_delay_multiplier * firerate_multiplier:
+
+                    bullet = Bullet(
+                        player.auto_cannon_bullet_path, (base_x, base_y))
+                    bullets.append(bullet)
+                    last_shot_time = now
 
         # Update and draw everything
         background.update()
@@ -133,7 +161,7 @@ def main():
         for bullet in bullets[:]:
             bullet.update()
             bullet.draw(screen)
-            if bullet.rect.left > WINDOW_WIDTH:
+            if bullet.rect.left > WINDOW_WIDTH or bullet.rect.top < 0 or bullet.rect.bottom > WINDOW_HEIGHT:
                 bullets.remove(bullet)
                 continue
 
@@ -145,6 +173,14 @@ def main():
                     enemy.take_damage(player.firepower)
                     if enemy.health <= 0 and enemy.destroyed:
                         score += enemy.score
+                        # Chance to drop power-up
+                        chance = random.random()
+                        if chance < 0.2:
+                            powerups.append(
+                                PowerUp(enemy.rect.centerx, enemy.rect.centery, "SG"))
+                        elif chance < 0.4:
+                            powerups.append(
+                                PowerUp(enemy.rect.centerx, enemy.rect.centery, "IF"))
                     bullets.remove(bullet)
                     break  # Bullet hits one enemy only
 
@@ -183,6 +219,17 @@ def main():
                     player.take_damage()
                     enemy.projectiles.remove(p)
 
+        # === Power-up update and pickup check ===
+        for pu in powerups[:]:
+            pu.update()
+            pu.draw(screen)
+            offset = (player.rect.x - pu.rect.x, player.rect.y - pu.rect.y)
+            if pu.mask.overlap(player.mask, offset):
+                active_powerups[pu.effect] = time.time() + pu.duration
+                powerups.remove(pu)
+            elif pu.is_off_screen():
+                powerups.remove(pu)
+
         # Score display
         score_surface = score_font.render(
             f"Score: {score}", True, (255, 255, 255))
@@ -206,9 +253,9 @@ def main():
             # Increase difficulty every minute
             enemy_health_multiplier += 0.1  # Increase enemy health
             enemy_speed_multiplier += 0.05  # Increase enemy speed
-            # Decrease player fire cooldown
-            fire_delay_multiplier = max(0.1, fire_delay_multiplier - 0.02)
-            print("Difficulty increased! New multipliers:",)
+            fire_delay_multiplier = max(
+                0.1, fire_delay_multiplier - 0.02)  # Decrease fire cooldown
+            print("Difficulty increased! New multipliers:")
 
         if blink and time.time() - blink_start > blink_duration:
             blink = False
@@ -223,7 +270,3 @@ def main():
         clock.tick(60)
 
     pygame.quit()
-
-
-if __name__ == "__main__":
-    main()

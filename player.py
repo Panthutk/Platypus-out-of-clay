@@ -13,6 +13,8 @@ class Bullet:
     def __init__(self, image_path, start_pos, speed=10):
         self.sprite_sheet = pygame.image.load(image_path).convert_alpha()
         self.frames = []
+        self.speed_x = speed
+        self.speed_y = 0
         frame_width = self.sprite_sheet.get_width() // 4
         for i in range(4):
             frame = pygame.Surface(
@@ -31,7 +33,8 @@ class Bullet:
 
     def update(self):
         # Move forward
-        self.rect.x += self.speed
+        self.rect.x += self.speed_x
+        self.rect.y += self.speed_y
 
         # Animate
         now = time.time()
