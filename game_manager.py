@@ -98,10 +98,16 @@ def main():
     blink_duration = 0.3
     last_minute_triggered = -1
 
+    # Dificulty notification
+    difficulty_msg_timer = 0
+    difficulty_msg_duration = 2  # seconds
+    show_difficulty_msg = False
+
     # Dynamic scaling factors
     enemy_health_multiplier = 1.0
     enemy_speed_multiplier = 1.0
     fire_delay_multiplier = 1.0
+    enemy_projectile_speed_multiplier = 1.0  # 1.0x speed
 
     # Game loop
     running = True
@@ -211,6 +217,7 @@ def main():
             new_enemy = Enemy()
             new_enemy.health = int(new_enemy.health * enemy_health_multiplier)
             new_enemy.speed *= enemy_speed_multiplier
+            new_enemy.projectile_speed *= enemy_projectile_speed_multiplier
             enemies.append(new_enemy)
             last_enemy_spawn = time.time()
 
@@ -279,9 +286,14 @@ def main():
                 0.1, fire_delay_multiplier - 0.02)  # Decrease fire cooldown
             # Decrease spawn delay (increase spawn rate)
             if enemy_spawn_delay > 0.3:
-                enemy_spawn_delay -= (0.3, enemy_spawn_delay - 0.1)
+                enemy_spawn_delay = max(0.3, enemy_spawn_delay - 0.1)
+
+            # Show blinking difficulty message
+            show_difficulty_msg = True
+            difficulty_msg_timer = time.time()
+
             print("Difficulty increased! New multipliers:")
-            print(f"Enemy Health: {enemy_health_multiplier:.2f}, Enemy Speed: {enemy_speed_multiplier:.2f}, Fire Delay: {fire_delay_multiplier:.2f}, Spawn Delay: {enemy_spawn_delay:.2f}")
+            print(f"Enemy Health: {enemy_health_multiplier: .2f}, Enemy Speed: {enemy_speed_multiplier: .2f}, Fire Delay: {fire_delay_multiplier: .2f}, Spawn Delay: {enemy_spawn_delay: .2f}, Enemy Projectile Speed: {enemy_projectile_speed_multiplier: .2f}")
 
         if blink and time.time() - blink_start > blink_duration:
             blink = False
@@ -314,6 +326,18 @@ def main():
         powerup_surface = score_font.render(
             powerup_text, True, (255, 255, 255))
         screen.blit(powerup_surface, (10, WINDOW_HEIGHT - 40))
+
+        # Blinking "Difficulty Increased!" Message
+        if show_difficulty_msg:
+            if time.time() - difficulty_msg_timer < difficulty_msg_duration:
+                if int(time.time() * 2) % 2 == 0:  # Blink
+                    msg_surface = score_font.render(
+                        "Difficulty Increased!", True, (255, 100, 100))
+                    msg_rect = msg_surface.get_rect(
+                        center=(WINDOW_WIDTH // 2, 30))
+                    screen.blit(msg_surface, msg_rect)
+            else:
+                show_difficulty_msg = False
 
         pygame.display.flip()
         clock.tick(60)
