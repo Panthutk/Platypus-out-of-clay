@@ -277,7 +277,11 @@ def main():
             enemy_speed_multiplier += 0.05  # Increase enemy speed
             fire_delay_multiplier = max(
                 0.1, fire_delay_multiplier - 0.02)  # Decrease fire cooldown
+            # Decrease spawn delay (increase spawn rate)
+            if enemy_spawn_delay > 0.3:
+                enemy_spawn_delay -= (0.3, enemy_spawn_delay - 0.1)
             print("Difficulty increased! New multipliers:")
+            print(f"Enemy Health: {enemy_health_multiplier:.2f}, Enemy Speed: {enemy_speed_multiplier:.2f}, Fire Delay: {fire_delay_multiplier:.2f}, Spawn Delay: {enemy_spawn_delay:.2f}")
 
         if blink and time.time() - blink_start > blink_duration:
             blink = False
