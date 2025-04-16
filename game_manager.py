@@ -90,6 +90,7 @@ def main():
     enemy_spawn_delay = 2  # Spawn delay for enemies
     last_enemy_spawn = time.time()
     score = 0
+    game_over = False
 
     # Timer
     start_time = time.time()
@@ -231,6 +232,8 @@ def main():
                       player.rect.y - enemy.rect.y)
             if enemy.mask.overlap(player.mask, offset):
                 player.take_damage()
+                if player.health <= 0:
+                    game_over = True
 
             if enemy.is_off_screen():
                 enemies.remove(enemy)
@@ -247,6 +250,8 @@ def main():
                 if projectile_mask.overlap(player.mask, offset):
                     player.take_damage()
                     enemy.projectiles.remove(p)
+                    if player.health <= 0:
+                        game_over = True
 
         # === Power-up update and pickup check ===
         for pu in powerups[:]:
@@ -326,6 +331,36 @@ def main():
         powerup_surface = score_font.render(
             powerup_text, True, (255, 255, 255))
         screen.blit(powerup_surface, (10, WINDOW_HEIGHT - 40))
+
+        if game_over:
+            overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+            overlay.set_alpha(180)
+            overlay.fill((0, 0, 0))
+            screen.blit(overlay, (0, 0))
+
+            msg1 = score_font.render("GAME OVER", True, (255, 0, 0))
+            msg2 = score_font.render(
+                "E to Reset, Q to Quit", True, (255, 255, 255))
+            screen.blit(msg1, msg1.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 30)))
+            screen.blit(msg2, msg2.get_rect(
+                center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 30)))
+            pygame.display.flip()
+
+            # Wait for input to continue or reset
+            while True:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        return
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_e:
+                            main()  # Restart the entire game
+                            return
+                        elif event.key == pygame.K_q:
+                            pygame.quit()
+                            return
+                clock.tick(60)
 
         # Blinking "Difficulty Increased!" Message
         if show_difficulty_msg:

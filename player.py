@@ -258,12 +258,13 @@ class PlayerShip:
 
     def take_damage(self):
         if self.shield_active:
-            return  # Shield is active block the damage
+            return  # Shield blocks the damage
 
-        if self.health > 1:
+        if self.health > 0:
             self.health -= 1
             self.update_sprite()
-            self.activate_shield()
+            if self.health > 0:
+                self.activate_shield()
 
     def activate_shield(self):
         self.shield_active = True
