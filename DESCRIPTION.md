@@ -20,7 +20,6 @@
 | **Standard Enemy** | Moves horizontally, aiming directly at the player.                  | <img src="Enemy/_Previews/Fighter.gif" width="200"> |
 | **Tracking Enemy** | Launches missiles that track players for a limited time.            | <img src="Enemy/_Previews/Battlecruiser.gif" width="200"> |
 | **Wave Enemy**     | Moves in sine-wave patterns, dropping bombs.                        | <img src="Enemy/_Previews/Torpedo.gif" width="200"> |
-| **Bosses**         | Appear at timed intervals, combining enemy attack patterns and summoning reinforcements. | <img src="Enemy/_Previews/Dreadnought.gif" width="200"> |
 
 - **Endless Mode:** Test your endurance against infinite enemy waves and compete for high scores.
 
@@ -30,4 +29,3 @@
 |---------------|-----------|
 | Movement      | W, A, S, D|
 | Shoot         | Space Bar |
-| Dash          | Left Shift |

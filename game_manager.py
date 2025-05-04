@@ -6,6 +6,7 @@ import math
 from player import PlayerShip, Bullet, Missile
 from enemy import Enemy
 from powerup import PowerUp
+import stats_logger as statistics
 
 pygame.font.init()
 score_font = pygame.font.SysFont("Arial", 32)
@@ -59,6 +60,22 @@ class BackgroundAnimator:
                      [self.current_frame_index], (0, 0))
 
 # === Main Game Setup ===
+
+def log_session(player, score, start_time):
+    session_id = f"session_{int(start_time)}"
+    distance = player.total_distance
+    shots_fired = player.total_shots
+    shots_hit = player.shots_hit
+    powerups_used = player.powerups_collected
+    survival_time = int(time.time() - start_time)
+    enemies_defeated = player.enemies_killed
+    edpm = enemies_defeated / (survival_time / 60) if survival_time > 0 else 0
+    accuracy_per_min = (shots_hit / shots_fired * 100) if shots_fired > 0 else 0
+    statistics.log_stats(
+        session_id, distance, shots_fired, shots_hit,
+        powerups_used, survival_time, enemies_defeated, score,
+        edpm=edpm, accuracy_per_min=accuracy_per_min
+    )
 
 
 def main():
@@ -115,8 +132,8 @@ def main():
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                log_session(player, score, start_time)
                 running = False
-
         # Player movement using WASD
         keys = pygame.key.get_pressed()
         dx = dy = 0
@@ -164,6 +181,7 @@ def main():
                     bullet = Bullet(
                         player.auto_cannon_bullet_path, (base_x, base_y))
                     bullets.append(bullet)
+                    player.total_shots += 1
                     last_shot_time = now
 
         # Update and draw everything
@@ -185,10 +203,12 @@ def main():
                           enemy.rect.y - bullet.rect.y)
                 if bullet.mask.overlap(enemy.mask, offset):
                     enemy.take_damage(player.firepower)
+                    player.shots_hit += 1
                     if enemy.health <= 0 and enemy.destroyed:
                         if not hasattr(enemy, "powerup_dropped"):
                             enemy.powerup_dropped = True
                             score += enemy.score
+                            player.enemies_killed += 1
                             if random.random() < 0.3:
                                 selected = random.choice(["SG", "IF", "MS"])
                                 powerups.append(
@@ -260,6 +280,7 @@ def main():
             offset = (player.rect.x - pu.rect.x, player.rect.y - pu.rect.y)
             if pu.mask.overlap(player.mask, offset):
                 active_powerups[pu.effect] = time.time() + pu.duration
+                player.powerups_collected += 1
                 powerups.remove(pu)
             elif pu.is_off_screen():
                 powerups.remove(pu)
@@ -355,9 +376,11 @@ def main():
                         return
                     elif event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_e:
+                            log_session(player, score, start_time)
                             main()  # Restart the entire game
                             return
                         elif event.key == pygame.K_q:
+                            log_session(player, score, start_time)
                             pygame.quit()
                             return
                 clock.tick(60)
@@ -377,4 +400,5 @@ def main():
         pygame.display.flip()
         clock.tick(60)
 
+    log_session(player, score, start_time)
     pygame.quit()

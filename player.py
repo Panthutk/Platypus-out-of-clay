@@ -130,6 +130,12 @@ class PlayerShip:
         self.rect = None
         self.is_moving = False
         self.firing = False
+        
+        self.total_distance = 0
+        self.total_shots = 0
+        self.shots_hit = 0
+        self.powerups_collected = 0
+        self.enemies_killed = 0
 
         # Load base engine (always visible)
         self.engine_base_image = pygame.image.load(
