@@ -69,13 +69,18 @@ def log_session(player, score, start_time):
     powerups_used = player.powerups_collected
     survival_time = int(time.time() - start_time)
     enemies_defeated = player.enemies_killed
-    edpm = enemies_defeated / (survival_time / 60) if survival_time > 0 else 0
+
+    edpm = enemies_defeated * 60 / survival_time if survival_time > 0 else 0
     accuracy_per_min = (shots_hit / shots_fired * 100) if shots_fired > 0 else 0
+    powerup_effectiveness = score / powerups_used if powerups_used > 0 else 0
+
     statistics.log_stats(
         session_id, distance, shots_fired, shots_hit,
         powerups_used, survival_time, enemies_defeated, score,
-        edpm=edpm, accuracy_per_min=accuracy_per_min
+        edpm=edpm, accuracy_per_min=accuracy_per_min,
+        powerup_effectiveness=powerup_effectiveness
     )
+
 
 
 def main():
