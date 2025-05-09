@@ -241,12 +241,19 @@ class PlayerShip:
     def move(self, dx, dy):
         self.is_moving = dx != 0 or dy != 0
 
+        # Save old center for distance calculation
+        old_x, old_y = self.rect.center
+
         # Calculate new position with boundaries
         new_x = max(0, min(self.rect.x + dx * self.speed,
                     WINDOW_WIDTH - self.rect.width))
         new_y = max(0, min(self.rect.y + dy * self.speed,
                     WINDOW_HEIGHT - self.rect.height))
         self.rect.x, self.rect.y = new_x, new_y
+
+        # Calculate and add distance moved
+        new_center = self.rect.center
+        self.total_distance += math.hypot(new_center[0] - old_x, new_center[1] - old_y)
 
         # Update engine and cannon positions
         self.engine_base_rect.center = self.rect.center

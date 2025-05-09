@@ -18,31 +18,31 @@ Final submission for **Computer Programming II (01219116/01219117)**
 
 #### Create Virtual Environment
 
-```bash
-python -m venv venv
+```powershell
+python -m venv env
 ```
 
 #### Activate Virtual Environment
 
-```bash
-.\venv\Scripts\Activate
+```powershell
+.\env\Scripts\Activate
 ```
 
 #### Install all requirements
 
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
 #### Run main game
 
-```bash
+```powershell
 python main.py
 ```
 
 #### Run visualizations (statistics graph)
 
-```bash
+```powershell
 python visualizations.py
 ```
 
@@ -51,13 +51,13 @@ python visualizations.py
 #### Create Virtual Environment
 
 ```bash
-python3 -m venv venv
+python3 -m venv env
 ```
 
 #### Activate Virtual Environment
 
 ```bash
-source venv/bin/activate
+source env/bin/activate
 ```
 
 #### Install all requirements
@@ -133,3 +133,4 @@ python3 visualizations.py
 💀 Game Over Flow
 
 * Options: E to continue, Q to quit and save data by using `stats_logger.py`
+* `stats_logger.py` automatically records gameplay data into `gamedata.csv`
