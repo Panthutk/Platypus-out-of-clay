@@ -1,6 +1,6 @@
 ## Project Overview
 
-**Platypus Out of Clay** is a 2D side-scrolling shooter inspired by the classic game *Platypus*. Take control of a clay-modeled spaceship, dodge hostile fire, collect power-ups, and survive waves of uniquely programmed enemies. The game features endless mode, difficulty scaling over time, and responsive animations for movement, combat, and destruction.
+**Platypus Out of Clay** is a 2D side-scrolling shooter inspired by the classic game *Platypus*. Take control of spaceship, dodge hostile fire, collect power-ups, and survive waves of uniquely programmed enemies. The game features endless mode, difficulty scaling over time, and responsive animations for movement, combat, and destruction.
 
 ## Features
 
