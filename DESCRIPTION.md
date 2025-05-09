@@ -37,3 +37,9 @@
 - **💀 Game Over & Restart Options**
   - Game Over screen appears with semi-transparent overlay.
   - Press **E** to restart instantly, or **Q** to quit (stats saved via `stats_logger.py`).
+
+## 📘 UML Class Diagram
+
+Here is the class structure of **Platypus Out of Clay**:
+
+![UML Diagram](uml.png)
