@@ -43,3 +43,9 @@
 Here is the class structure of **Platypus Out of Clay**:
 
 ![UML Diagram](uml.png)
+
+## 🎬 Video
+
+Click below to watch a presentations of **Platypus Out of Clay**:
+
+[![Watch the demo video](https://img.youtube.com/vi/of-xPOjihV8/0.jpg)](https://youtu.be/of-xPOjihV8)
